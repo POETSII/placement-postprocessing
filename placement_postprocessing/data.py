@@ -31,6 +31,13 @@ keyHwEdgeLoading = "hardware edge loading"
 keyHwToApp = "hardware to application mapping"
 keyNodeLoading = "hardware node loading"
 
+# Headers for dataframes
+headers = {keyAppEdgeCosts: ("from", "to", "cost"),
+           keyAppToHw: ("appnode", "hwnode"),
+           keyHwEdgeLoading: ("from", "to", "load"),
+           keyHwToApp: ("hwnode", "appnode"),
+           keyNodeLoading: ("core", "load")}
+
 portfolio = {keyAppEdgeCosts: reAppEdgeCosts,
              keyAppToHw: reAppToHw,
              keyDiagnostic: reDiagnostic,
@@ -44,18 +51,27 @@ class Data:
     # Fields for each file, to be populated with strings in self.detect_files.
     files = {key: None for key in portfolio.keys()}
 
+    # Dataframes for each CSV, to be populated in self.read_files.
+    frames = {item[0]: None for item in
+              filter(lambda x: x[1].split(".")[-1] == "csv",
+                     portfolio.items())}
+
+    # The directory holding the files we're processing.
+    dataDir = None
+
     def __init__(self, path: str) -> None:
         """
         Constructs a placement data object from the data found within the
         directory at `path`.
         """
-        self.detect_files(path)
+        self.dataDir = path
+        self.detect_files()
+        self.read_files()
 
 
-    def detect_files(self, path: str) -> None:
+    def detect_files(self) -> None:
         """
-        Checks the input directory `path` for placement files. Raises a
-        RuntimeError if:
+        Checks `dataDir` for placement files. Raises a RuntimeError if:
 
          - The path is not a directory.
          - Any of the expected files is not found, or is found more than once.
@@ -75,8 +91,10 @@ class Data:
         """
 
         # Sanity
-        if (not os.path.isdir(path)):
-            raise ValueError("Could not find a directory at '{}.".format(path))
+        if (not os.path.isdir(self.dataDir)):
+            tmp = self.dataDir
+            self.dataDir = None
+            raise ValueError("Could not find a directory at '{}.".format(tmp))
 
         # Check every file is there. Throw a wobbly if:
         #  - there is not exactly one match per expected file
@@ -88,7 +106,7 @@ class Data:
         try:
 
             # Check every file against every regex
-            for handle in os.listdir(path):
+            for handle in os.listdir(self.dataDir):
                 for index in portfolio.keys():
 
                     # The actual work
@@ -151,4 +169,38 @@ class Data:
         # Reset self.files on error.
         except RuntimeError:
             self.files = {key: None for key in portfolio.keys()}
+            raise
+
+    def read_files(self):
+        """
+        Opens each detected CSV file as a pandas dataframe. Raises a
+        RuntimeError if:
+
+         - Any files have not been detected yet.
+
+        Sets the values for each key in `self.frames`, if there were no
+        errors. If there were errors, the values in `self.files` are all set to
+        None.
+
+        Also see `self.detect_files`.
+        """
+
+        try:
+            # Sanity
+            if None in self.files.values():
+                raise RuntimeError(
+                    "Files '{}' have not been detected. Have you called "
+                    "`detect_files` yet?"
+                    .format(", ".join(
+                        [item[0] for item in filter(lambda x: x[1] is None,
+                                                    self.files.items())])))
+
+            # Load 'em up.
+            for key in self.frames.keys():
+                self.frames[key] = pd.read_csv(
+                    os.path.join(self.dataDir, self.files[key]),
+                    names=headers[key])
+
+        except RuntimeError:
+            self.frames = {key: None for key in self.frames.keys()}
             raise
