@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import re
 
-class PlacementData:
+class Data:
 
     # Fields for each file, populated with strings
     fileDiagnostics = None
