@@ -6,15 +6,46 @@ from .data import Data
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def node_loading_histogram(data: Data, node: str="mailbox",
+
+def _common_formatting(figure: mpl.figure.Figure) -> mpl.figure.Figure:
+    """
+    Take a figure and apply sensible formatting to to it.
+    """
+    axes = figure.gca()
+    axes.xaxis.get_major_locator().set_params(integer=True)
+    axes.yaxis.get_major_locator().set_params(integer=True)
+    axes.spines["right"].set_visible(False)
+    axes.spines["top"].set_visible(False)
+    axes.yaxis.set_ticks_position("left")
+    axes.xaxis.set_ticks_position("bottom")
+    figure.tight_layout()
+    return figure
+
+
+# Alias
+def core_loading_histogram(data: Data, figArgs: dict={},
+                           plotArgs: dict={}) \
+    -> mpl.figure.Figure:
+    """See documentation for hardware_loading_histogram."""
+    return hardware_loading_histogram(data, "core", figArgs, plotArgs)
+
+
+def edge_loading_histogram(data: Data, figArgs: dict={},
+                           plotArgs: dict={}) \
+    -> mpl.figure.Figure:
+    """See documentation for hardware_loading_histogram."""
+    return hardware_loading_histogram(data, "edge", figArgs, plotArgs)
+
+
+def hardware_loading_histogram(data: Data, what: str="mailbox",
                            figArgs: dict={}, plotArgs: dict={}) \
     -> mpl.figure.Figure:
     """
-    Draws a node loading histogram - either for cores or for
-    mailboxes. Arguments:
+    Draws a loading histogram - either for cores (node), for mailboxes (node),
+    or for edges connecting mailboxes. Arguments:
 
     - data: A placement_processing Data object with loaded data.
-    - node: String, either "mailbox" or "core"
+    - what: String, either "mailbox", "core", or "edge"
     - figArgs: Keyword arguments to be passed to the figure constructor
           (subplots).
     - plotArgs: Plotting arguments to be passed to the histogram plot (hist).
@@ -23,8 +54,15 @@ def node_loading_histogram(data: Data, node: str="mailbox",
     like.
     """
 
-    loadings = data.frames[keyNodeLoadingCore if node == "core" else
-                           keyNodeLoadingMbox]["load"]
+    if what == "core":
+        loadings = data.frames[keyNodeLoadingCore]["load"]
+    elif what == "mailbox":
+        loadings = data.frames[keyNodeLoadingMbox]["load"]
+    elif what == "edge":
+        loadings = data.frames[keyHwEdgeLoading]["load"]
+    else:  # Sanity
+        raise RuntimeError("Argument 'what' must be either 'mailbox', 'core', "
+                           "or 'edge'.")
 
     # Process figure arguments (adding our defaults). We modify inplace because
     # we're monsters.
@@ -35,8 +73,8 @@ def node_loading_histogram(data: Data, node: str="mailbox",
 
     # Process plot arguments (adding our defaults), as before.
     defaultPlotArgs = {"bins": 6,
-                       "color": "r",
-                       "edgecolor": "#550000"}
+                       "color": "b" if what == "edge" else "r",
+                       "edgecolor": "#000055" if what == "edge" else "#550000"}
     for item in defaultPlotArgs.items():
         if item[0] not in plotArgs.keys():
             plotArgs[item[0]] = item[1]
@@ -52,32 +90,23 @@ def node_loading_histogram(data: Data, node: str="mailbox",
 
     # The formatting continues...
     axes.set_ylim(0, len(loadings))
-    axes.xaxis.get_major_locator().set_params(integer=True)
-    axes.yaxis.get_major_locator().set_params(integer=True)
-    axes.set_xlabel("Number of application nodes placed on " +
-                    ("cores" if node == "core" else "mailboxes"))
     axes.set_ylabel("Occurences (total={})".format(len(loadings)))
-    axes.set_title("{} Loading"
-                   .format("Core" if node == "core" else "Mailbox"))
-    axes.spines["right"].set_visible(False)
-    axes.spines["top"].set_visible(False)
-    axes.yaxis.set_ticks_position("left")
-    axes.xaxis.set_ticks_position("bottom")
-    figure.tight_layout()
+    if what == "core":
+        axes.set_xlabel("Number of application nodes placed on cores")
+        axes.set_title("Core Loading")
+    elif what == "mailbox":
+        axes.set_xlabel("Number of application nodes placed on mailboxes")
+        axes.set_title("Mailbox Loading")
+    elif what == "edge":
+        axes.set_xlabel("Number of application edges overlaying\n "
+                        "mailbox edges (in hardware)")
+        axes.set_title("Mailbox Edge Loading")
+    return _common_formatting(figure)
 
-    return figure
 
-
-# Aliases
+# Alias
 def mailbox_loading_histogram(data: Data, figArgs: dict={},
                               plotArgs: dict={}) \
     -> mpl.figure.Figure:
-    """See documentation for node_loading_histogram."""
-    return node_loading_histogram(data, "mailbox", figArgs, plotArgs)
-
-
-def core_loading_histogram(data: Data, figArgs: dict={},
-                           plotArgs: dict={}) \
-    -> mpl.figure.Figure:
-    """See documentation for node_loading_histogram."""
-    return node_loading_histogram(data, "core", figArgs, plotArgs)
+    """See documentation for hardware_loading_histogram."""
+    return hardware_loading_histogram(data, "mailbox", figArgs, plotArgs)
