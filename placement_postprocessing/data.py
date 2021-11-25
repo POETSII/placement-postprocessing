@@ -60,6 +60,10 @@ class Data:
     # The directory holding the files we're processing.
     dataDir = None
 
+    # Gathered metadata
+    appname = None
+    timestamp = None
+
     def __init__(self, path: str) -> None:
         """
         Constructs a placement data object from the data found within the
@@ -101,9 +105,6 @@ class Data:
         #  - there is not exactly one match per expected file
         #  - appnames are inconsistent
         #  - timestamps are inconsistent
-        appname = None
-        timestamp = None
-
         try:
 
             # Check every file against every regex
@@ -144,20 +145,21 @@ class Data:
                         timestampGroup = groups[0]
 
                     # Are timestamps consistent?
-                    if timestamp and timestampGroup != timestamp:
+                    if self.timestamp and timestampGroup != self.timestamp:
                         raise RuntimeError(
                             "File '{}' has a different timestamp. Ensure only "
                             "one placement run is in the target directory."
                             .format(handle))
-                    timestamp = timestampGroup
+                    self.timestamp = timestampGroup
 
                     # Are appnames consistent? (not all expressions...)
-                    if appnameGroup and appname and appnameGroup != appname:
+                    if (appnameGroup and self.appname and
+                        appnameGroup != self.appname):
                         raise RuntimeError(
                             "File '{}' has a different appname. Ensure only "
                             "one placement run is in the target directory."
                             .format(handle))
-                        appname = appnameGroup
+                        self.appname = appnameGroup
 
             # Check that all files were found at least once.
             if None in self.files.values():
