@@ -58,7 +58,7 @@ class Data:
     # is split into two.
     frames = {item[0]: None for item in
               filter(lambda x: x[1].split(".")[-1] == "csv" and
-                     not "node_loading" in x[1],
+                     "node_loading" not in x[1],
                      portfolio.items())}
     frames[keyNodeLoadingCore] = None
     frames[keyNodeLoadingMbox] = None
