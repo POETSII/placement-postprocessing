@@ -1,6 +1,8 @@
 # A class that manages the reading and containment of placement data from the
 # Orchestrator.
 
+from .keys import *  # Sorry
+
 import os
 import pandas as pd
 import re
@@ -23,23 +25,6 @@ reHwToApp = (r"placement_hardware_to_gi_({})_({})\.csv"
              .format(reAppname, reTimestamp))
 reNodeLoading = (r"placement_node_loading_({})\.csv"
                  .format(reTimestamp))
-
-# Dictionary keys (printer-friendly terse descriptions of files)
-keyAppEdgeCosts = "application edge costs"
-keyAppToHw = "application to hardware mapping"
-keyDiagnostic = "placement diagnostics"
-keyHwEdgeLoading = "hardware edge loading"
-keyHwToApp = "hardware to application mapping"
-keyNodeLoading = "hardware node loading"
-keyNodeLoadingCore = "hardware core loading"
-keyNodeLoadingMbox = "hardware mailbox loading"
-
-# Headers for dataframes
-headers = {keyAppEdgeCosts: ("from", "to", "cost"),
-           keyAppToHw: ("appnode", "hwnode"),
-           keyHwEdgeLoading: ("from", "to", "load"),
-           keyHwToApp: ("hwnode", "appnode"),
-           keyNodeLoading: ("node", "load")}
 
 portfolio = {keyAppEdgeCosts: reAppEdgeCosts,
              keyAppToHw: reAppToHw,
