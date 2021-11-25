@@ -31,13 +31,15 @@ keyDiagnostic = "placement diagnostics"
 keyHwEdgeLoading = "hardware edge loading"
 keyHwToApp = "hardware to application mapping"
 keyNodeLoading = "hardware node loading"
+keyNodeLoadingCore = "hardware core loading"
+keyNodeLoadingMbox = "hardware mailbox loading"
 
 # Headers for dataframes
 headers = {keyAppEdgeCosts: ("from", "to", "cost"),
            keyAppToHw: ("appnode", "hwnode"),
            keyHwEdgeLoading: ("from", "to", "load"),
            keyHwToApp: ("hwnode", "appnode"),
-           keyNodeLoading: ("core", "load")}
+           keyNodeLoading: ("node", "load")}
 
 portfolio = {keyAppEdgeCosts: reAppEdgeCosts,
              keyAppToHw: reAppToHw,
@@ -52,10 +54,14 @@ class Data:
     # Fields for each file, to be populated with strings in self.detect_files.
     files = {key: None for key in portfolio.keys()}
 
-    # Dataframes for each CSV, to be populated in self.read_files.
+    # Dataframes for each CSV, to be populated in self.read_files. Node loading
+    # is split into two.
     frames = {item[0]: None for item in
-              filter(lambda x: x[1].split(".")[-1] == "csv",
+              filter(lambda x: x[1].split(".")[-1] == "csv" and
+                     not "node_loading" in x[1],
                      portfolio.items())}
+    frames[keyNodeLoadingCore] = None
+    frames[keyNodeLoadingMbox] = None
 
     # The directory holding the files we're processing.
     dataDir = None
@@ -197,11 +203,24 @@ class Data:
                         [item[0] for item in filter(lambda x: x[1] is None,
                                                     self.files.items())])))
 
-            # Load 'em up.
+            # Load 'em up...
             for key in self.frames.keys():
+                if key == keyNodeLoadingCore or key == keyNodeLoadingMbox:
+                    continue
                 self.frames[key] = pd.read_csv(
                     os.path.join(self.dataDir, self.files[key]),
                     names=headers[key])
+
+            # ...treating node loading separately. Load the dataframe, find the
+            # split, then create two dataframes from that.
+            tmp = pd.read_csv(
+                os.path.join(self.dataDir, self.files[keyNodeLoading]),
+                names=headers[keyNodeLoading])
+            mailboxDataIndex = tmp[tmp.isnull().any(axis=1)].index[1]
+            self.frames[keyNodeLoadingCore] = \
+                tmp[1:mailboxDataIndex].copy().reset_index(drop=True)
+            self.frames[keyNodeLoadingMbox] = \
+                tmp[mailboxDataIndex + 1:].copy().reset_index(drop=True)
 
         except RuntimeError:
             self.frames = {key: None for key in self.frames.keys()}
