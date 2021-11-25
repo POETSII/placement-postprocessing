@@ -11,17 +11,17 @@ reAppname = ".+"  # Optimistic
 reTimestamp = "[0-9]{4}(?:-[0-9]{2}){2}T[0-9]{2}(?:-[0-9]{2}){2}"
 
 # Regular expressions for expected data file handles.
-reAppEdgeCosts = ("placement_gi_edges_({})_({})\.csv"
+reAppEdgeCosts = (r"placement_gi_edges_({})_({})\.csv"
                   .format(reAppname, reTimestamp))
-reAppToHw = ("placement_gi_to_hardware_({})_({})\.csv"
+reAppToHw = (r"placement_gi_to_hardware_({})_({})\.csv"
              .format(reAppname, reTimestamp))
-reDiagnostic = ("placement_diagnostics_({})_({})\.txt"
+reDiagnostic = (r"placement_diagnostics_({})_({})\.txt"
                 .format(reAppname, reTimestamp))
-reHwEdgeLoading = ("placement_edge_loading_({})\.csv"
+reHwEdgeLoading = (r"placement_edge_loading_({})\.csv"
                    .format(reTimestamp))
-reHwToApp = ("placement_hardware_to_gi_({})_({})\.csv"
+reHwToApp = (r"placement_hardware_to_gi_({})_({})\.csv"
              .format(reAppname, reTimestamp))
-reNodeLoading = ("placement_node_loading_({})\.csv"
+reNodeLoading = (r"placement_node_loading_({})\.csv"
                  .format(reTimestamp))
 
 # Dictionary keys (printer-friendly terse descriptions of files)
@@ -72,7 +72,6 @@ class Data:
         self.dataDir = path
         self.detect_files()
         self.read_files()
-
 
     def detect_files(self) -> None:
         """
@@ -154,7 +153,7 @@ class Data:
 
                     # Are appnames consistent? (not all expressions...)
                     if (appnameGroup and self.appname and
-                        appnameGroup != self.appname):
+                            appnameGroup != self.appname):
                         raise RuntimeError(
                             "File '{}' has a different appname. Ensure only "
                             "one placement run is in the target directory."
