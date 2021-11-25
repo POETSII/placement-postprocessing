@@ -6,7 +6,8 @@ import pandas as pd
 import re
 
 # Regular expressions for common capture groups in data file handles.
-reAppname = ".+"
+reAppname = ".+"  # Optimistic
+# YYYY-MM-DDTHH-MM-SS
 reTimestamp = "[0-9]{4}(?:-[0-9]{2}){2}T[0-9]{2}(?:-[0-9]{2}){2}"
 
 # Regular expressions for expected data file handles.
