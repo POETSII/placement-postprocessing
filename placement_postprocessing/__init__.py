@@ -1,2 +1,2 @@
-from .artist import Artist
+from .artist import *
 from .data import Data
