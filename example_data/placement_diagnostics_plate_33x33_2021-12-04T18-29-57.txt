@@ -1,0 +1,7 @@
+maxDevicesPerThread:1
+maxEdgeCost:24
+method:spre
+startTime:2021-12-04T18-29-57
+endTime:2021-12-04T18-29-57
+score:17456.3
+argCount:0
