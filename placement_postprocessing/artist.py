@@ -57,7 +57,7 @@ def _histogram(data: Data, what: str="mailbox", figArgs: dict={},
 
     # Process figure arguments (adding our defaults). We modify inplace because
     # we're monsters.
-    defaultFigArgs = {"figsize": (4, 3)}
+    defaultFigArgs = {"figsize": (4, 3), "dpi": 100}
     for item in defaultFigArgs.items():
         if item[0] not in figArgs.keys():
             figArgs[item[0]] = item[1]
@@ -79,6 +79,7 @@ def _histogram(data: Data, what: str="mailbox", figArgs: dict={},
 
     # Actually do some work
     figure, axes = plt.subplots(**figArgs)
+    figure.dpi = figArgs["dpi"]  # Sometimes overridden by other arguments.
     axes.hist(loadings, **plotArgs)
 
     # This weird approach suppresses a UserWarning raised when limits are set
