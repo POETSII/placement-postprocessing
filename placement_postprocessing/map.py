@@ -93,9 +93,9 @@ def node_position_from_name(name: str) -> typing.Tuple[int, int]:
 
 
 
-def draw_map(data: Data, cleanup: bool=True, outPath: str="",
+def draw_map(data: Data, cleanup: bool=True, drawHwEdges: bool=False,
              maxNodeHLoad: float=np.inf,
-             maxEdgeHLoad: float=np.inf) -> None:
+             maxEdgeHLoad: float=np.inf, outPath: str="" ) -> None:
     """
     Draws a map showing device placement on a hardware graph using
     graphviz, where:
@@ -109,14 +109,15 @@ def draw_map(data: Data, cleanup: bool=True, outPath: str="",
 
     Arguments:
 
+     - data: A placement_processing Data object with loaded data.
      - cleanup: If False, leaves a source file describing the graph. Useful
            for debugging.
-     - data: A placement_processing Data object with loaded data.
-     - outPath: Path (absolute or relative) to write the map
-           to. Extension determines the type of file written.
+     - drawHwEdges: If True, draws hardware edges that are used in black.
      - maxNodeHLoad: If not default, forces a maximum node loading on the
            map. If infinite (default), impose no maximum.
      - maxEdgeHLoad: As above, but for edges.
+     - outPath: Path (absolute or relative) to write the map
+           to. Extension determines the type of file written.
 
     Returns nothing, but writes the graph to `outPath`.
     """
@@ -165,29 +166,15 @@ def draw_map(data: Data, cleanup: bool=True, outPath: str="",
             load / maxEdgeLoad * maxThicc \
             if load / maxEdgeLoad < 1 else maxThicc
 
-    # Compute application node edges that don't directly overlap with a single
-    # edge in the hardware model. Do this by going through each application
-    # edge, then for each application edge, check if their hardware nodes
-    # (mailboxes) have a direct connection. If they don't, add them to
-    # `extraEdges`.
-    #
-    # We don't actually need to make the exception if the graph is strict. <!>
+    # Compute application node edges. Do this by going through each application
+    # edge, then making a connection between their hardware nodes.
     extraEdges = []
     hwEdgesDf = data.frames[keyHwEdgeLoading]  # Convenience
     for _, record in data.frames[keyAppEdgeCosts].iterrows():
         appEdge = tuple(record)
         hwFrom = ".".join(data.frames[keyAppToHw][data.frames[keyAppToHw]["appnode"] == appEdge[0]]["hwnode"].values[0].split(".")[:-2])
         hwTo = ".".join(data.frames[keyAppToHw][data.frames[keyAppToHw]["appnode"] == appEdge[1]]["hwnode"].values[0].split(".")[:-2])
-        matchingHwEdges = hwEdgesDf[
-            (
-                (hwEdgesDf["from"] == hwFrom) &
-                (hwEdgesDf["to"] == hwTo)
-            ) |
-            (
-                (hwEdgesDf["from"] == hwTo) &
-                (hwEdgesDf["to"] == hwFrom)
-            )]
-        if len(matchingHwEdges) == 0 and hwFrom != hwTo:
+        if hwFrom != hwTo:
             extraEdges.append([hwFrom, hwTo])
 
     # Draw graph...
@@ -203,9 +190,12 @@ def draw_map(data: Data, cleanup: bool=True, outPath: str="",
         else:
             graph.node(node, fillcolor=colour)
 
-    # Hardware edges, with their loading thicknesses.
-    for edge, thickness in edgeLoading.items():
-        graph.edge(*edge, color="#000000", penwidth=str(thickness))
+    # Hardware edges, with their loading thicknesses. Note these come before
+    # application-hardware edges because the graph is strict (i.e. edges after
+    # the first are ignored).
+    if drawHwEdges:
+        for edge, thickness in edgeLoading.items():
+            graph.edge(*edge, color="#000000", penwidth=str(thickness))
 
     # Application-hardware edges.
     for edge in extraEdges:
